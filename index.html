@@ -15,7 +15,7 @@
       rel="stylesheet"
     />
 
-    <title>Bienvenue sur Z! ou K on sait pas encore</title>
+    <title>Ecris des Truks</title>
   </head>
   <body class="bg-light">
     <ul class="nav nav-tabs" id="myTabs">
@@ -29,14 +29,15 @@
         <a class="nav-link" id="registerTab" data-toggle="tab" href="#register">Inscription</a>
       </li>
       <li class="nav-item" id="logoutTab">
-        <a class="nav-link" href="#" onclick="logout()">Déconnexion</a>
+        <a class="nav-link" data-toggle="modal" data-target="#logoutModal">Déconnexion</a>
     </li>
+    
     </ul>
 
     <div class="tab-content">
       <div class="tab-pane fade" id="home">
         <!-- Contenu de la section utilisateur -->
-        <div id="loggedInUserInfo" class="mt-4">
+        <div id="loggedInUserInfo" class="mt-4 ml-5">
           <h3>
             Bienvenue sur Z <span id="loggedInUsername"></span>, la plateforme sans
             modération!
@@ -84,7 +85,7 @@
         >
           <h2>Inscription</h2>
           <div class="form-group">
-            <label for="registerUsername">Nom d'utilisateur :</label>
+            <label for="registerUsername">Nom de Trukeur :</label>
             <input
               type="text"
               id="registerUsername"
@@ -108,6 +109,7 @@
           <button type="submit" class="btn btn-primary">S'inscrire</button>
         </form>
       </div>
+</div>
 
       <!-- fenêtre modale -->
       <div
@@ -152,7 +154,7 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editPostModalLabel">Éditer le Post</h5>
+                    <h5 class="modal-title" id="editPostModalLabel">Éditer le Truk</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -161,7 +163,7 @@
                     <!-- Formulaire d'édition du post -->
                     <form id="editPostForm">
                         <div class="form-group">
-                            <label for="editedPostContent">Contenu du Post</label>
+                            <label for="editedPostContent">Tu veut modifier ton Truk?</label>
                             <textarea class="form-control" id="editedPostContent" rows="3"></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary" id="saveChangesButton">Enregistrer les modifications</button>
@@ -171,6 +173,28 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title" id="logoutModalLabel">Déconnexion</h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                  </button>
+              </div>
+              <div class="modal-body">
+                  <p>Êtes-vous sûr de vouloir quitter Z? ou K?</p>
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                  <button type="button" class="btn btn-primary" id="logoutButton">Déconnexion</button>
+
+              </div>
+          </div>
+      </div>
+  </div>
+  
     
     </div>
 

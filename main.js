@@ -2,6 +2,8 @@ let userInfo;
 
 document.getElementById("loginForm").addEventListener("submit", loginUser);
 
+
+
 async function getToken() {
     return localStorage.getItem('token');
 }
@@ -84,6 +86,18 @@ async function loginUser(event) {
     }
 }
 
+function logout() {
+    console.log("Fonction logout appelée");
+    // Supprimer le token du local storage
+    localStorage.removeItem('token');
+    console.log("Token supprimé");
+    
+    // Rediriger l'utilisateur vers la page de connexion (ou une autre page)
+    window.location.reload();
+}
+
+
+
 
 function activateHomeTab(userInfo, isLoggedIn) {
     const homeTab = document.getElementById("homeTab");
@@ -105,7 +119,7 @@ function activateHomeTab(userInfo, isLoggedIn) {
     if (isLoggedIn && userInfo && userInfo.username) {
         const loggedInUserInfo = document.getElementById("loggedInUserInfo");
         loggedInUserInfo.innerHTML = `
-            <h3>Bienvenue, ${userInfo.username} ! n'hesite pas a dire des truk!</h3>
+            <h3>Bienvenue, ${userInfo.username}! n'hesite pas a dire des truk!</h3>
             <!-- Vous pouvez ajouter d'autres informations de l'utilisateur ici -->
             
         `;
@@ -115,8 +129,8 @@ function activateHomeTab(userInfo, isLoggedIn) {
          newPostForm.classList.add("mb-3");
          newPostForm.innerHTML = `
          <div class="form-group col-md-8">
-         <textarea class="form-control" rows="2" id="newPostMessage" placeholder="Écrire un nouveau post"></textarea></br>
-         <button type="button" class="btn btn-dark" id="postButton">Poster</button>
+         <textarea class="form-control" rows="2" id="newPostMessage" placeholder="Écrire un nouveau truK"></textarea></br>
+         <button type="button" class="btn btn-dark" id="postButton">Truker</button>
      </div>
      
          `;
@@ -144,7 +158,7 @@ function activateHomeTab(userInfo, isLoggedIn) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const isLoggedIn = false;
-    
+
     if (isLoggedIn) {
         // Affichez le bouton de déconnexion
         document.getElementById("logoutTab").style.display = "block";
@@ -165,38 +179,21 @@ document.addEventListener('DOMContentLoaded', () => {
             await editPost(postId);
         });
     }
-    
+
+    const logoutModalButton = document.getElementById("logoutButton");
+    if (logoutModalButton) {
+        logoutModalButton.addEventListener("click", () => {
+            console.log("Clic sur le bouton de déconnexion dans la fenêtre modale");
+            logout(); // Assurez-vous que cette fonction est appelée
+        });
+    }
 });
 
 
-async function logout() {
-    try {
-        const response = await fetch("http://localhost:5000/logout", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `${localStorage.getItem('token')}`,
-            },
-        });
-
-        if (response.ok) {
-            // Effacez le token côté client
-            localStorage.removeItem('token');
-
-            // Redirigez l'utilisateur vers la page de connexion ou effectuez d'autres actions après la déconnexion
-            window.location.href = "/login";
-        } else {
-            console.error("Erreur lors de la déconnexion :", response.statusText);
-        }
-    } catch (error) {
-        console.error("Erreur lors de la déconnexion :", error);
-    }
-}
-
-// Associez l'événement de déconnexion au bouton correspondant
-document.getElementById("logoutTab").addEventListener("click", logout);
+ 
 
 
+ 
 //post function 
 
 async function fetchData() {
@@ -411,6 +408,44 @@ async function deletePost(postId) {
     }
   }
   
+async function addComment(event, postId) {
+    event.preventDefault();
+
+    const commentMessageInput = document.getElementById("commentMessage");
+    const commentMessage = commentMessageInput.value;
+
+    if (!(await checkToken())) {
+        return;
+    }
+
+    try {
+        const token = await getToken();
+        const response = await fetch(`http://localhost:5000/post/${postId}/comments`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `${token}`,
+            },
+            body: JSON.stringify({
+                message: commentMessage,
+            }),
+        });
+
+        const newComment = await response.json();
+
+        // Utiliser la fonction fetchData pour obtenir les données mises à jour des commentaires
+        fetchComments(postId).then((comments) => {
+            displayComments(comments);
+        });
+
+        // Effacer le champ du formulaire
+        commentMessageInput.value = "";
+    } catch (error) {
+        console.error("Erreur lors de l'ajout du commentaire:", error);
+    }
+}
+
+
 
 
 async function displayPosts(posts) {
@@ -426,7 +461,7 @@ async function displayPosts(posts) {
             postElement.innerHTML = `
                 <div class="card">
                     <div class="card-body">
-                        <p class="card-text">${post.message}</p>
+                    <p class="card-text" style="white-space: pre-line;">${post.message}</p>
                         <p class="card-text">
                             <small class="text-muted">${post.author.username}</small></br>
                             <small class="text-muted">${post.createdAt}</small></br>
@@ -445,7 +480,7 @@ async function displayPosts(posts) {
                         <div class="form-group">
                             <textarea class="form-control" rows="1" placeholder="Commenter"></textarea>
                         </div>
-                        <button type="submit" class="btn btn-success">Comment'</button>
+                        <button type="button" class="btn btn-success" onclick="addComment()">Commenter</button>
                     </form>
                 </div>
             `;
@@ -465,7 +500,7 @@ async function displayPosts(posts) {
             if (dislikeButton) {
                 dislikeButton.addEventListener("click", async () => {
                     const postId = dislikeButton.getAttribute("data-post-id");
-                    console.log("Dislike button clicked for post ID:", postId);
+                    console.log("Dislike button cliqué for post ID:", postId);
                     await dislikePost(postId);
                 });
             }
@@ -476,7 +511,7 @@ async function displayPosts(posts) {
 
             if (post.author._id === userInfo._id) {
             const editButton = document.createElement("button");
-            editButton.classList.add("btn", "btn-warning", "edit-button");
+            editButton.classList.add("btn", "btn-warning", "mr-3","ml-3", "edit-button");
             editButton.setAttribute("data-toggle", "modal");
             editButton.setAttribute("data-target", "#editPostModal");
             editButton.setAttribute("data-post-id", post._id); // Ajoutez cet attribut pour stocker l'ID du post
@@ -510,7 +545,7 @@ async function displayPosts(posts) {
   
     if (post.author._id === userInfo._id) {
     const deleteButton = document.createElement("button");
-    deleteButton.classList.add("btn", "btn-danger", "delete-button");
+    deleteButton.classList.add("btn", "btn-dark", "delete-button");
     deleteButton.setAttribute("data-post-id", post._id);
     deleteButton.innerText = "Supprimer";
   
