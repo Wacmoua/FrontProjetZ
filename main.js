@@ -119,7 +119,7 @@ function activateHomeTab(userInfo, isLoggedIn) {
     if (isLoggedIn && userInfo && userInfo.username) {
         const loggedInUserInfo = document.getElementById("loggedInUserInfo");
         loggedInUserInfo.innerHTML = `
-            <h3>Bienvenue, ${userInfo.username}! n'hesite pas a dire des truk!</h3>
+            <h3>Bienvenue, ${userInfo.username}! N'hésite pas à dire des truks!</h3>
             <!-- Vous pouvez ajouter d'autres informations de l'utilisateur ici -->
             
         `;
@@ -233,7 +233,40 @@ async function fetchData() {
     }
 }
 
+async function addComment(event, postId) {
+    event.preventDefault();
 
+    const commentMessageInput = document.getElementById(`commentMessage-${postId}`);
+    const commentMessage = commentMessageInput.value;
+
+    if (!(await checkToken())) {
+        return;
+    }
+
+    try {
+        const token = await getToken();
+        const response = await fetch(`http://localhost:5000/post/${postId}/comments`, {
+            method: "POST",
+            headers: {
+                "Authorization": `${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                message: commentMessage,
+            }),
+        });
+
+        const newComment = await response.json();
+
+        // Utiliser la fonction fetchAndDisplayComments pour obtenir les données mises à jour des commentaires
+        await fetchAndDisplayComments(postId);
+        
+        // Effacer le champ du formulaire
+        commentMessageInput.value = "";
+    } catch (error) {
+        console.error("Erreur lors de l'ajout du commentaire:", error);
+    }
+}
 
 async function addPost(event) {
     event.preventDefault();
@@ -408,178 +441,224 @@ async function deletePost(postId) {
     }
   }
   
-async function addComment(event, postId) {
-    event.preventDefault();
+ // Fonction générique pour créer des éléments HTML
+function createElement(tag, attributes, innerHTML) {
+    const element = document.createElement(tag);
 
-    const commentMessageInput = document.getElementById("commentMessage");
-    const commentMessage = commentMessageInput.value;
-
-    if (!(await checkToken())) {
-        return;
+    for (const key in attributes) {
+        element.setAttribute(key, attributes[key]);
     }
 
+    if (innerHTML) {
+        element.innerHTML = innerHTML;
+    }
+
+    return element;
+}
+
+// Fonction pour ajouter un écouteur d'événements de manière programmatique
+function addEventListener(element, eventType, callback) {
+    element.addEventListener(eventType, callback);
+}
+
+// Fonction pour afficher les commentaires
+async function fetchAndDisplayComments(postId) {
     try {
         const token = await getToken();
         const response = await fetch(`http://localhost:5000/post/${postId}/comments`, {
-            method: "POST",
             headers: {
-                "Content-Type": "application/json",
-                "Authorization": `${token}`,
-            },
-            body: JSON.stringify({
-                message: commentMessage,
-            }),
+                'Authorization': `${token}`,
+                'Content-Type': 'application/json'
+            }
         });
 
-        const newComment = await response.json();
+        if (!response.ok) {
+            console.error("Erreur lors de la récupération des commentaires:", response.statusText);
+            return [];
+        }
 
-        // Utiliser la fonction fetchData pour obtenir les données mises à jour des commentaires
-        fetchComments(postId).then((comments) => {
-            displayComments(comments);
-        });
-
-        // Effacer le champ du formulaire
-        commentMessageInput.value = "";
+        const comments = await response.json();
+        displayComments(comments);
     } catch (error) {
-        console.error("Erreur lors de l'ajout du commentaire:", error);
+        console.error("Erreur lors de la récupération et de l'affichage des commentaires:", error);
     }
 }
 
 
 
 
+
+// Fonction pour créer et afficher les commentaires
+
 async function displayPosts(posts) {
     const postContainer = document.getElementById("postContainer");
     postContainer.innerHTML = "";
 
-    // Ajoutez une vérification pour s'assurer que posts est défini avant de l'itérer
     if (posts && Array.isArray(posts)) {
         posts.forEach((post) => {
-            const postElement = document.createElement("div");
-            postElement.classList.add("col-md-8", "offset-md-2", "mb-3");
-
-            postElement.innerHTML = `
+            const postElement = createElement("div", { class: "col-md-8 offset-md-2 mb-3" }, `
                 <div class="card">
                     <div class="card-body">
-                    <p class="card-text" style="white-space: pre-line;">${post.message}</p>
+                        <p class="card-text" style="white-space: pre-line;">${post.message}</p>
                         <p class="card-text">
                             <small class="text-muted">${post.author.username}</small></br>
                             <small class="text-muted">${post.createdAt}</small></br>
                             <small class="text-primary likers">Liked by: ${post.likers.map(liker => liker.userId.username).join(', ')}</small></br>
                             <small class="text-danger dislikers">Disliked by: ${post.dislikers.map(disliker => disliker.userId.username).join(', ')}</small>
-                           
-
                         </p>
-                        <button class="btn btn-primary like-button" data-post-id="${post._id}">Like</button>
-                        <button class="btn btn-danger dislike-button" data-post-id="${post._id}">Dislike</button>
                         
                     </div>
-                    
-                    <!-- Ajout du formulaire de commentaire -->
-                    <form class="card-footer">
-                        <div class="form-group">
-                            <textarea class="form-control" rows="1" placeholder="Commenter"></textarea>
-                        </div>
-                        <button type="button" class="btn btn-success" onclick="addComment()">Commenter</button>
-                    </form>
+
+                    <!-- Ajout de la section des commentaires -->
+                    <div class="comments-section">
+                        <h5>Commentaires</h5>
+                        <div id="commentContainer-${post._id}"></div> <!-- Utilisation d'un ID unique pour chaque conteneur de commentaires -->
+                        <!-- Ajoutez un formulaire pour ajouter des commentaires si nécessaire -->
+                    </div>
                 </div>
-            `;
+            `);
 
             postContainer.appendChild(postElement);
 
-            const likeButton = postElement.querySelector(".like-button");
-            if (likeButton) {
-                likeButton.addEventListener("click", async () => {
-                    const postId = likeButton.getAttribute("data-post-id");
-                    console.log("like button clicked for post ID:", postId);
-                    await likePost(postId);
+            // ...
+
+            const commentForm = document.createElement("form");
+            commentForm.classList.add("card-footer");
+            commentForm.innerHTML = `
+                <div class="form-group">
+                    <textarea class="form-control" rows="1" id="commentMessage-${post._id}" placeholder="Commenter"></textarea>
+                </div>
+                <button type="button" class="btn btn-success" onclick="addComment(event, '${post._id}')">Commenter</button>
+            `;
+
+            postElement.appendChild(commentForm);
+
+            const commentButton = commentForm.querySelector(".btn-success");
+            commentButton.addEventListener("click", async () => {
+                const postId = post._id;
+                await fetchComments(postId).then((comments) => {
+                    displayComments(postId, comments);
                 });
-            }
-
-            const dislikeButton = postElement.querySelector(".dislike-button");
-            if (dislikeButton) {
-                dislikeButton.addEventListener("click", async () => {
-                    const postId = dislikeButton.getAttribute("data-post-id");
-                    console.log("Dislike button cliqué for post ID:", postId);
-                    await dislikePost(postId);
-                });
-            }
-
-            
-
-         
-
-            if (post.author._id === userInfo._id) {
-            const editButton = document.createElement("button");
-            editButton.classList.add("btn", "btn-warning", "mr-3","ml-3", "edit-button");
-            editButton.setAttribute("data-toggle", "modal");
-            editButton.setAttribute("data-target", "#editPostModal");
-            editButton.setAttribute("data-post-id", post._id); // Ajoutez cet attribut pour stocker l'ID du post
-            editButton.innerText = "Éditer";
-            
-            // Ajoutez l'écouteur d'événements pour le bouton "Éditer"
-            editButton.addEventListener("click", () => {
-                const postId = editButton.getAttribute("data-post-id");
-                console.log("Éditer le bouton cliqué pour le post ID:", postId);
-            
-                // Récupérer le contenu actuel du post
-                const currentContent = post.message;
-            
-                // Remplir le champ de saisie du modal avec le contenu actuel
-                const editedPostContent = document.getElementById('editedPostContent');
-                editedPostContent.value = currentContent;
-            
-                // Stocker l'ID du post en cours d'édition dans un attribut du bouton "Enregistrer les modifications"
-                const saveChangesButton = document.getElementById("saveChangesButton");
-                if (saveChangesButton) {
-                    saveChangesButton.setAttribute("data-post-id", postId);
-                }
-            
-                // Ouvrir le modal d'édition
-                $('#editPostModal').modal('show');
             });
 
-            postElement.appendChild(editButton);
-        }
 
-  
-    if (post.author._id === userInfo._id) {
-    const deleteButton = document.createElement("button");
-    deleteButton.classList.add("btn", "btn-dark", "delete-button");
-    deleteButton.setAttribute("data-post-id", post._id);
-    deleteButton.innerText = "Supprimer";
-  
-    // Ajouter l'écouteur d'événements pour le bouton de suppression
-    deleteButton.addEventListener("click", async () => {
-      try {
-        const postId = deleteButton.getAttribute("data-post-id");
-        console.log("Supprimer le bouton cliqué pour le post ID:", postId);
-  
-        // Appeler la fonction de suppression côté client
-        await deletePost(postId);
-  
-        // Mettez à jour votre interface utilisateur en conséquence
-        // ...
-  
-        // Vous pouvez également supprimer l'élément du post du DOM si nécessaire
-        postElement.remove();
-      } catch (error) {
-        console.error("Erreur lors de la suppression du post:", error);
-      }
-    });
-  
-    // Ajouter le bouton de suppression à l'élément du post
-    postElement.appendChild(deleteButton);
-  }
-  // ...
-  
+            // Ajout d'un écouteur d'événements pour afficher les commentaires lorsqu'on clique sur le bouton
+            addEventListener(commentButton, "click", async () => {
+                const postId = post._id;
+                await fetchAndDisplayComments(postId);
+            });
+            const likeButton = document.createElement("button");
+            likeButton.classList.add("btn", "btn-primary", "like-button");
+            likeButton.setAttribute("data-post-id", post._id);
+            likeButton.innerText = "Like";
+            likeButton.addEventListener("click", async () => {
+                const postId = likeButton.getAttribute("data-post-id");
+                console.log("like button clicked for post ID:", postId);
+                await likePost(postId);
+            });
+            postElement.querySelector(".card-body").appendChild(likeButton);
+        
+            const dislikeButton = document.createElement("button");
+            dislikeButton.classList.add("btn", "btn-danger", "dislike-button");
+            dislikeButton.setAttribute("data-post-id", post._id);
+            dislikeButton.innerText = "Dislike";
+            dislikeButton.addEventListener("click", async () => {
+                const postId = dislikeButton.getAttribute("data-post-id");
+                console.log("Dislike button cliqué for post ID:", postId);
+                await dislikePost(postId);
+            });
+            postElement.querySelector(".card-body").appendChild(dislikeButton);
+        
+            // Ajout du bouton d'édition
+            if (post.author._id === userInfo._id) {
+                const editButton = document.createElement("button");
+                editButton.classList.add("btn", "btn-warning", "mr-3","ml-3", "edit-button");
+                editButton.setAttribute("data-toggle", "modal");
+                editButton.setAttribute("data-target", "#editPostModal");
+                editButton.setAttribute("data-post-id", post._id); // Ajoutez cet attribut pour stocker l'ID du post
+                editButton.innerText = "Éditer";
+                
+                // Ajoutez l'écouteur d'événements pour le bouton "Éditer"
+                editButton.addEventListener("click", () => {
+                    const postId = editButton.getAttribute("data-post-id");
+                    console.log("Éditer le bouton cliqué pour le post ID:", postId);
+                
+                    // Récupérer le contenu actuel du post
+                    const currentContent = post.message;
+                
+                    // Remplir le champ de saisie du modal avec le contenu actuel
+                    const editedPostContent = document.getElementById('editedPostContent');
+                    editedPostContent.value = currentContent;
+                
+                    // Stocker l'ID du post en cours d'édition dans un attribut du bouton "Enregistrer les modifications"
+                    const saveChangesButton = document.getElementById("saveChangesButton");
+                    if (saveChangesButton) {
+                        saveChangesButton.setAttribute("data-post-id", postId);
+                    }
+                
+                    // Ouvrir le modal d'édition
+                    $('#editPostModal').modal('show');
+                });
+    
+                postElement.querySelector(".card-body").appendChild(editButton);
+            }
+        
+            // Ajout du bouton de suppression
+            if (post.author._id === userInfo._id) {
+                const deleteButton = document.createElement("button");
+                deleteButton.classList.add("btn", "btn-dark", "delete-button");
+                deleteButton.setAttribute("data-post-id", post._id);
+                deleteButton.innerText = "Supprimer";
+              
+                // Ajouter l'écouteur d'événements pour le bouton de suppression
+                deleteButton.addEventListener("click", async () => {
+                  try {
+                    const postId = deleteButton.getAttribute("data-post-id");
+                    console.log("Supprimer le bouton cliqué pour le post ID:", postId);
+              
+                    // Appeler la fonction de suppression côté client
+                    await deletePost(postId);
+              
+                    // Mettez à jour votre interface utilisateur en conséquence
+                    // ...
+              
+                    // Vous pouvez également supprimer l'élément du post du DOM si nécessaire
+                    postElement.remove();
+                  } catch (error) {
+                    console.error("Erreur lors de la suppression du post:", error);
+                  }
+                });
+              
+                // Ajouter le bouton de suppression à l'élément du post
+                postElement.querySelector(".card-body").appendChild(deleteButton);
+              }
+        });
+    }
+}
+
 // ...
 
-         });
-        }
-      }
+// Fonction pour afficher les commentaires spécifiques à une publication
+function displayComments(postId, comments) {
+    const commentContainer = document.getElementById(`commentContainer-${postId}`);
 
-        
+    commentContainer.innerHTML = "";
+
+    if (comments && Array.isArray(comments)) {
+        comments.forEach((comment) => {
+            const commentElement = createElement("div", { class: "comment mb-2" }, `
+                <p class="comment-text">${comment.message}</p>
+                <p class="comment-info">
+                    <small class="text-muted">${comment.author.username}</small>
+                    <small class="text-muted">${comment.createdAt}</small>
+                </p>
+            `);
+
+            commentContainer.appendChild(commentElement);
+        });
+    }
+}
+
 
 
 
