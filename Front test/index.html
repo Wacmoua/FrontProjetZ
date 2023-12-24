@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <script type="module">
+      import jwtDecode from 'https://cdn.jsdelivr.net/npm/jwt-decode@4.0.0/+esm'
+      </script>
+
+
+
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="img/favicon-16x16.png" type="image/x-icon">
+
+    <title>Ecris des Truks</title>
+  </head>
+  <body class="bg-light">
+    <ul class="nav nav-tabs" id="myTabs">
+      <li class="nav-item">
+        <a class="nav-link" id="homeTab" data-toggle="tab" href="#home">Accueil</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="loginTab" data-toggle="tab" href="#login">Connexion</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="registerTab" data-toggle="tab" href="#register">Inscription</a>
+      </li>
+      <li class="nav-item" id="logoutTab">
+        <a class="nav-link" data-toggle="modal" data-target="#logoutModal">Déconnexion</a>
+    </li>
+    <li class="nav-item" id="monCompte">
+      <a class="nav-link" id="manage-account-tab" data-toggle="tab" href="#manage-account">Mon compte</a>
+  </li>
+    
+
+    
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane fade" id="home">
+       
+        <div id="loggedInUserInfo" class="mt-4 ml-5">
+          <h3>
+            Bienvenue sur Z <span id="loggedInUsername"></span>, la plateforme sans
+            modération!
+          </h3>
+         
+          <div id="userSection">
+            
+            
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="login">
+        
+        <form id="loginForm" class="container mt-4">
+          <h2>Connexion</h2>
+          <div class="form-group">
+            <label for="loginUsername">Nom d'utilisateur :</label>
+            <input
+              type="text"
+              id="loginUsername"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Mot de passe :</label>
+            <input
+              type="password"
+              id="loginPassword"
+              class="form-control"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">Se connecter</button>
+        </form>
+      </div>
+
+      <div class="tab-pane fade" id="register">
+        
+        <form
+          id="registerForm"
+          
+          class="container mt-4"
+        >
+          <h2>Inscription</h2>
+          <div class="form-group">
+            <label for="registerUsername">Nom de Trukeur :</label>
+            <input
+              type="text"
+              id="registerUsername"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="email">Adresse e-mail :</label>
+            <input type="email" id="email" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="registerPassword">Mot de passe :</label>
+            <input
+              type="password"
+              id="registerPassword"
+              class="form-control"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">S'inscrire</button>
+        </form>
+      </div>
+</div>
+
+
+
+
+
+      <!-- fenêtre modale -->
+      <div
+        class="modal fade"
+        id="registrationSuccessModal"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="registrationSuccessModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="registrationSuccessModalLabel">
+                Inscription réussie
+              </h5>
+              <button
+                type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              Félicitations ! Votre inscription a été effectuée avec succès.
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-dismiss="modal"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="editPostModal" tabindex="-1" role="dialog" aria-labelledby="editPostModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPostModalLabel">Éditer le Truk</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Formulaire d'édition du post -->
+                    <form id="editPostForm">
+                        <div class="form-group">
+                            <label for="editedPostContent">Tu veut modifier ton Truk?</label>
+                            <textarea class="form-control" id="editedPostContent" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="saveChangesButton">Enregistrer les modifications</button>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+          <div class="modal-content">
+              <div class="modal-header">
+                  <h5 class="modal-title" id="logoutModalLabel">Déconnexion</h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                  </button>
+              </div>
+              <div class="modal-body">
+                  <p>Êtes-vous sûr de vouloir quitter Z? ou K?</p>
+              </div>
+              <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                  <button type="button" class="btn btn-primary" id="logoutButton">Déconnexion</button>
+
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <div class="modal fade" id="accountModal" tabindex="-1" role="dialog" aria-labelledby="accountModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="accountModalLabel">Mon compte</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="updateProfileForm">
+                  <h2>Mettre à jour le profil</h2>
+                  <div class="form-group">
+                      <label for="newUsername">Nouveau nom d'utilisateur :</label>
+                      <input type="text" id="newUsername" name="newUsername" class="form-control" required />
+                  </div>
+                  <div class="form-group">
+                      <label for="newPassword">Nouveau mot de passe :</label>
+                      <input type="password" id="newPassword" name="newPassword" class="form-control" required />
+                  </div>
+                  <button type="submit" class="btn btn-success">Mettre à jour le profil</button>
+                    
+                </form>
+                <form id="deleteAccountForm">
+                  <!-- ... (ajoute les champs nécessaires) -->
+                  <button type="submit" class="btn btn-danger mt-5">Supprimer le compte</button>
+              </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+ 
+
+
+  
+    
+    
+
+
+   
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+   
+    
+    <script type="module" src="register.js"></script>
+    <script type="module" src="main.js"></script>
+    
+  </body>
+</html>
+
